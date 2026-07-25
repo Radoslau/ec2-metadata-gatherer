@@ -1,4 +1,29 @@
 from metadata_gatherer import get_imds_token, get_aws_metadata, get_os_info, get_shell_users
+from urllib.parse import urlparse
+import boto3
+
+def upload_to_s3(file_path, s3_uri):
+    """Uploads a local file to an S3 bucket using an S3 URI."""
+    try:
+        # Parse the s3 URI
+        parsed_uri = urlparse(s3_uri)
+        bucket_name = parsed_uri.netloc
+        prefix = parsed_uri.path.lstrip('/')
+        
+        # Construct object key
+        if prefix.endswith('/') or not prefix:
+            object_name = f"{prefix}{file_path}"
+        else:
+            object_name = f"{prefix}/{file_path}"
+            
+        print(f"Uploading {file_path} to bucket '{bucket_name}'...")
+        
+        s3_client = boto3.client('s3')
+        s3_client.upload_file(file_path, bucket_name, object_name)
+        print(f"Successfully uploaded to S3://{bucket_name}/{object_name}")
+        
+    except Exception as e:
+        print(f"Failed to upload to S3: {e}")
 
 def generate_report():
     print("Gathering EC2 instance metadata")
@@ -29,12 +54,19 @@ def generate_report():
     )
 
     # File handler
-    filename = "ec2_metadata.txt"
+    filename = "metadata.txt"
     with open(filename, "w") as file:
         file.write(report)
 
     print(f"Data successfully written: {filename}")
     return filename
-
+# Local report
 if __name__ == "__main__":
-    generate_report()
+    report_file = generate_report()
+
+    # S3 Upload proceeds here
+
+    TARGET_S3_URI = "s3://applicant-task/instance-143/"
+    upload_to_s3(report_file, TARGET_S3_URI)
+
+
