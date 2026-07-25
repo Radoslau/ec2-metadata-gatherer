@@ -1,2 +1,4 @@
 aws_env/
 __pycache__/
+/ec2_metadata.txt
+/metadata.txt
